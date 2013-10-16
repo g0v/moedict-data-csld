@@ -6,7 +6,7 @@ open my $fh, '<:utf8', '兩岸常用詞典.tsv';
 binmode STDERR, ':utf8';
 binmode STDOUT, ':raw';
 <$fh>;
-my $comma = '[';
+my %heteronyms;
 while (<$fh>) {
     my ($id, $title) = split /\t/, $_;
     s/[〜～]/$title/g;
@@ -16,25 +16,27 @@ while (<$fh>) {
     my (undef, undef, undef, $seq_sound, $spec_word, $spec_sound, $bpmf, $pinyin, undef, undef, @defs) = split /\t/, $_;
     warn qq["$title"$/];
     $bpmf =~ s/丨/ㄧ/g;
-    my $json = JSON::XS::encode_json({
-        title => $title,
-        heteronyms => [ {
+    push @{ $heteronyms{$title} }, {
                 pinyin => $pinyin,
                 bopomofo => $bpmf,
                 definitions => [ map {
                         my %entry;
                         s/^\d+\.\s*//;
                         if (s/[［\[]例[］\]]([^。]+)。?//) {
-                            $entry{example} = [ "例\x{20DD}" . join('、', map "「$_」", split /[｜│\∣]/, $1) . "。" ];
+                            $entry{example} = [ "例\x{20DD}" . join('、', map "「$_」", split /[｜︱│\∣]/, $1) . "。" ];
                         }
                         s/[\[［]([^\x00-\xff])[］\]]/$1\x{20DD}/g;
                         $entry{def} = $_;
                         \%entry
                     } grep {/\S/} @defs
                 ]
-            }]
-    });
+    };
+}
+my $comma = '[';
+for my $title (sort keys %heteronyms) {
+    $json = JSON::XS::encode_json({ title => $title, heteronyms => $heteronyms{$title} });
     print "$comma$json\n";
     $comma = ',';
 }
 print "]";
+
