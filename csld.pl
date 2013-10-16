@@ -11,6 +11,9 @@ while (<$fh>) {
     my ($id, $title) = split /\t/, $_;
     s/[〜～]/$title/g;
     s/○○頁//g;
+    s/""/"/g;
+    s/>\s*</></g;
+    s/\r//g;
     s/★/陸\x{20DD}/g;
     s/▲/臺\x{20DD}/g;
     my (undef, undef, undef, $seq_sound, $spec_word, $spec_sound, $bpmf, $pinyin, undef, undef, @defs) = split /\t/, $_;
@@ -22,6 +25,8 @@ while (<$fh>) {
                 definitions => [ map {
                         my %entry;
                         s/^\d+\.\s*//;
+                        s/^\s*"+\s*//g;
+                        s/\s*"+\s*$//g;
                         if (s/[［\[]例[］\]]([^。]+)。?//) {
                             $entry{example} = [ "例\x{20DD}" . join('、', map "「$_」", split /[｜︱│\∣]/, $1) . "。" ];
                         }
