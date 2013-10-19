@@ -7,6 +7,7 @@ binmode STDERR, ':utf8';
 binmode STDOUT, ':raw';
 <$fh>;
 my %heteronyms;
+my %alt;
 while (<$fh>) {
     my ($id, $title) = split /\t/, $_;
     s/[〜～]/$title/g;
@@ -16,9 +17,13 @@ while (<$fh>) {
     s/\r//g;
     s/★/陸\x{20DD}/g;
     s/▲/臺\x{20DD}/g;
-    my (undef, undef, undef, $seq_sound, $spec_word, $spec_sound, $bpmf, $pinyin, undef, undef, @defs) = split /\t/, $_;
-    warn qq["$title"$/];
+    my (undef, undef, $title_cn, $seq_sound, $spec_word, $spec_sound, $bpmf, $pinyin, $bpmf_cn, $pinyin_cn, @defs) = split /\t/, $_;
     $bpmf =~ s/丨/ㄧ/g;
+    $bpmf_cn =~ s/丨/ㄧ/g;
+    $bpmf .= "<br>陸\x{20DD}$bpmf_cn" unless !$bpmf_cn or $bpmf eq $bpmf_cn;
+    $pinyin .= "<br>陸\x{20DD}$pinyin_cn" unless !$pinyin_cn or $pinyin eq $pinyin_cn;
+    undef $title_cn if $title_cn eq $title;
+    $alt{$title} = $title_cn if $title_cn;
     push @{ $heteronyms{$title} }, {
                 pinyin => $pinyin,
                 bopomofo => $bpmf,
@@ -39,7 +44,9 @@ while (<$fh>) {
 }
 my $comma = '[';
 for my $title (sort keys %heteronyms) {
-    $json = JSON::XS::encode_json({ title => $title, heteronyms => $heteronyms{$title} });
+    $json = JSON::XS::encode_json({ title => $title, heteronyms => $heteronyms{$title},
+                ($alt{$title} ? (alt => $alt{$title}) : ()),
+        });
     print "$comma$json\n";
     $comma = ',';
 }
