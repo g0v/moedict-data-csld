@@ -38,6 +38,7 @@ while (<$fh>) {
     push @{ $heteronyms{$title} }, {
                 pinyin => $pinyin,
                 bopomofo => $bpmf,
+                ($title_cn ? (alt => $alt{$title}) : ()),
                 ($spec_word ? (specific_to => $spec_word) : ()),
                 definitions => [ map {
                         my %entry;
@@ -59,7 +60,6 @@ for my $title (sort keys %heteronyms) {
     $json = JSON::XS->new->pretty(1)->encode({
         title => $title,
         heteronyms => $heteronyms{$title},
-        ($alt{$title} ? (alt => $alt{$title}) : ()),
     });
     $json =~ s/" : /":/g;
     print "$comma $json";
