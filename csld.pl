@@ -21,14 +21,24 @@ while (<$fh>) {
     my (undef, undef, $title_cn, $seq_sound, $spec_word, $spec_sound, $bpmf, $pinyin, $bpmf_cn, $pinyin_cn, @defs) = split /\t/, $_;
     $bpmf =~ s/丨/ㄧ/g;
     $bpmf_cn =~ s/丨/ㄧ/g;
-    $bpmf .= "<br>陸\x{20DD}$bpmf_cn" unless !$bpmf_cn or $bpmf eq $bpmf_cn;
-    $pinyin .= "<br>陸\x{20DD}$pinyin_cn" unless !$pinyin_cn or $pinyin eq $pinyin_cn;
+    $spec_word =~ s/\x{20DD}/\x{20DF}/g if $spec_word;
+    # TODO: <<詞條較長時陸音哪裡發音不同，需要視覺化>>
+    if ($spec_sound) {
+        $spec_sound =~ s/\x{20DD}/\x{20DF}/g;
+        $bpmf = "$bpmf$bpmf_cn$spec_sound";
+        $pinyin = "$pinyin$pinyin_cn$spec_sound";
+    }
+    else {
+        $bpmf .= "<br>陸\x{20DD}$bpmf_cn" unless !$bpmf_cn or $bpmf eq $bpmf_cn;
+        $pinyin .= "<br>陸\x{20DD}$pinyin_cn" unless !$pinyin_cn or $pinyin eq $pinyin_cn;
+    }
     warn qq["$title"\n] unless $seen{$title}++;
     undef $title_cn if $title_cn eq $title;
     $alt{$title} = $title_cn if $title_cn;
     push @{ $heteronyms{$title} }, {
                 pinyin => $pinyin,
                 bopomofo => $bpmf,
+                ($spec_word ? (specific_to => $spec_word) : ()),
                 definitions => [ map {
                         my %entry;
                         s/^\d+\.\s*//;
@@ -51,6 +61,7 @@ for my $title (sort keys %heteronyms) {
         heteronyms => $heteronyms{$title},
         ($alt{$title} ? (alt => $alt{$title}) : ()),
     });
+    $json =~ s/" : /":/g;
     print "$comma $json";
     $comma = ',';
 }
