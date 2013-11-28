@@ -25,7 +25,7 @@ say join $/, @{ $x->[1] };
 Q2:
 #2. 本詞典與大陸版《兩岸常用詞典》比對：
 my $cn_titles = Set::SortedArray->new(
-    map { s/^,//r =~ s/,.*//r } split(/\n/, read_file('大陸版字詞目及音讀.csv', {binmode => ':utf8'}))
+    map { s/^,|^[（（][^,]+//r =~ s/[,\s].*//r } split(/\n/, read_file('大陸版字詞目及音讀.csv', {binmode => ':utf8'}))
 );
 
 #本詞典多收那些字詞？
