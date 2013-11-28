@@ -19,6 +19,7 @@ while (my $row = $csv->getline ($fh)) {
     my ($version, $phase, $state, $id, $title) = @$row;
 # 稿件版本,稿件階段,稿件狀態,備注,字詞流水序, 正體字形,簡化字形,音序,臺／陸特有詞,臺／陸特有音,臺灣音讀,臺灣漢拼,大陸音讀,大陸漢拼,釋義１,釋義２,釋義３,釋義４,釋義５,釋義６,釋義７,釋義８,釋義９,釋義１０,釋義１１,釋義１２,釋義１３,釋義１４,釋義１５,釋義１６,釋義１７,釋義１８,釋義１９,釋義２０,釋義２１,釋義２２,釋義２３,釋義２４,釋義２５,釋義２６,釋義２７,釋義２８,釋義２９,釋義３０
     my (undef, undef, undef, undef, undef, $title_cn, $seq_sound, $spec_word, $spec_sound, $bpmf, $pinyin, $bpmf_cn, $pinyin_cn, @defs) = map {
+    s/ɡ/g/g;
     s/[〜～]/$title/g;
     s/○○頁//g;
     s/""/"/g;
