@@ -113,6 +113,61 @@ for my $entry (@$csld) {
 
 #3. 哪些字詞的注音符號與漢語拼音的音讀不一致？
 Q3:
+use Bopomofo;
+$Bopomofo::Map{ㄉㄚ} = 'da';
+$Bopomofo::Map{ㄌㄩ} = 'lu';
+$Bopomofo::Map{ㄊㄚ} = 'ta';
+$Bopomofo::Map{ㄇㄜ} = 'me';
+$Bopomofo::Map{ㄘㄡ} = 'cou';
+$Bopomofo::Map{'ㄌㄧ'} = 'li';
+$Bopomofo::Map{'ㄒㄧㄢ'} = 'xian';
+$Bopomofo::Map{'ㄋㄡ'} = 'nou';
+$Bopomofo::Map{'ㄧㄛ'} = 'yo';
+$Bopomofo::Map{'ㄧㄞ'} = 'yai';
+$Bopomofo::Map{'ㄋㄣ'} = 'nen';
+$Bopomofo::Map{'ㄋㄜ'} = 'ne';
+my $re = join '|', map quotemeta, sort { length $b <=> length $a } keys %Bopomofo::Map;
+
+for my $entry (@$csld) {
+    next unless length($entry->{title}) > 1;
+    for my $hetero (@{ $entry->{heteronyms} }) {
+        my $bpmf = $hetero->{bopomofo};
+        next if $bpmf =~ /ㄦ/;
+        $bpmf =~ s/<br>.*//;
+        $bpmf =~ s/陸⃟//g;
+        $bpmf =~ s/臺⃟//g;
+        $bpmf =~ s/[臺陸]//g;
+        $bpmf =~ s/｜/ㄧ/g;
+        my $py = $hetero->{pinyin};
+        $py =~ s/<br>.*//;
+        $py =~ s/陸⃟//g;
+        $py =~ s/臺⃟//g;
+        $py =~ s/[臺陸]//g;
+        $py =~ s/ɡ/g/g;
+        $py =~ s/ɑ/a/g;
+        use Unicode::Normalize;
+        my $py_nfd = Encode::encode('ascii' => NFD($py));
+        $py_nfd =~ s/[-–:',\s\?]//g;
+        $bpmf =~ s/($re)/$Bopomofo::Map{$1}/go;
+        my $bpmf_nfd = Encode::encode('ascii' => NFD($bpmf));
+        $bpmf_nfd =~ s/[-–:',\s\?]//g;
+        next if $py_nfd =~ /r$/;
+        next unless $py_nfd;
+        $bpmf = $hetero->{bopomofo};
+        $bpmf =~ s/<br>.*//;
+        $bpmf =~ s/陸⃟//g;
+        $bpmf =~ s/臺⃟//g;
+        $bpmf =~ s/[臺陸]//g;
+        $bpmf =~ s/ㄧ/｜/g;
+        my $py = $hetero->{pinyin};
+        $py =~ s/<br>.*//;
+        $py =~ s/陸⃟//g;
+        $py =~ s/臺⃟//g;
+        $py =~ s/[臺陸]//g;
+        $py =~ s/g/ɡ/g;
+        say "$hetero->{id}\t$entry->{title}\t$bpmf\t$py" unless $bpmf_nfd eq $py_nfd;
+    }
+}
 
 #4. 哪些字詞的漢語拼音有誤？
 Q4:
