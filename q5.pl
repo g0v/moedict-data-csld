@@ -1,5 +1,5 @@
 use utf8;
-use 5.12.0;
+use 5.14.0;
 use Encode;
 use JSON::XS 'decode_json', 'encode_json';
 use File::Slurp 'read_file';
