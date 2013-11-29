@@ -8,8 +8,6 @@ binmode STDOUT, ':utf8';
 my (%variants_id, %variants_ch);
 my $csld = decode_json(read_file('dict-csld.json', {binmode => ':mmap'}));
 
-goto Q3;
-
 Q1:
 my %sound;
 for my $file (qw[ 國語一字多音審訂表1999.csv 國語一字多音審訂表2012.csv ]) {
@@ -126,10 +124,14 @@ $Bopomofo::Map{'ㄧㄛ'} = 'yo';
 $Bopomofo::Map{'ㄧㄞ'} = 'yai';
 $Bopomofo::Map{'ㄋㄣ'} = 'nen';
 $Bopomofo::Map{'ㄋㄜ'} = 'ne';
+$Bopomofo::Map{'ㄎㄟ'} = 'kei';
+$Bopomofo::Map{'ㄌㄩㄢ'} = 'lyuan';
+$Bopomofo::Map{'ㄛ'} = 'o';
+$Bopomofo::Map{'ㄓㄟˋ'} = 'zhei';
 my $re = join '|', map quotemeta, sort { length $b <=> length $a } keys %Bopomofo::Map;
 
 for my $entry (@$csld) {
-    next unless length($entry->{title}) > 1;
+    next unless length $entry->{title} > 1;
     for my $hetero (@{ $entry->{heteronyms} }) {
         my $bpmf = $hetero->{bopomofo};
         next if $bpmf =~ /ㄦ/;
@@ -166,15 +168,120 @@ for my $entry (@$csld) {
         $py =~ s/[臺陸]//g;
         $py =~ s/g/ɡ/g;
         say "$hetero->{id}\t$entry->{title}\t$bpmf\t$py" unless $bpmf_nfd eq $py_nfd;
+        #TODO: Tonal?
     }
 }
 
+
+Q3_2:
+for my $entry (@$csld) {
+    for my $hetero (@{ $entry->{heteronyms} }) {
+        my $bpmf = $hetero->{bopomofo};
+        $bpmf =~ s/<br>.*//;
+        $bpmf =~ s/陸⃟//g;
+        $bpmf =~ s/臺⃟//g;
+        $bpmf =~ s/[臺陸]//g;
+        my $py = $hetero->{pinyin};
+        $py =~ s/<br>.*//;
+        $py =~ s/陸⃟//g;
+        $py =~ s/臺⃟//g;
+        $py =~ s/[臺陸]//g;
+        my $py_tones = NFD($py) =~ s/[^ ́ ̌ ̀]+/ /gr;
+        $py_tones =~ s/ ́/2/g;
+        $py_tones =~ s/ ̌/3/g;
+        $py_tones =~ s/ ̀/4/g;
+        $py_tones =~ s/ //g;
+        my $bpmf_tones = NFD($bpmf) =~ s/[^ˊˇˋ]+/ /gr;
+        $bpmf_tones =~ s/ˊ/2/g;
+        $bpmf_tones =~ s/ˇ/3/g;
+        $bpmf_tones =~ s/ˋ/4/g;
+        $bpmf_tones =~ s/ //g;
+        next unless $py_tones;
+        next unless $bpmf_tones;
+        next if $bpmf_tones eq $py_tones;
+        $bpmf = $hetero->{bopomofo};
+        $bpmf =~ s/<br>.*//;
+        $bpmf =~ s/陸⃟//g;
+        $bpmf =~ s/臺⃟//g;
+        $bpmf =~ s/[臺陸]//g;
+        $bpmf =~ s/ㄧ/｜/g;
+        my $py = $hetero->{pinyin};
+        $py =~ s/<br>.*//;
+        $py =~ s/陸⃟//g;
+        $py =~ s/臺⃟//g;
+        $py =~ s/[臺陸]//g;
+        $py =~ s/g/ɡ/g;
+        say "$hetero->{id}\t$entry->{title}\t$bpmf\t$py";
+    }
+}
+exit;
+
 #4. 哪些字詞的漢語拼音有誤？
 Q4:
+for my $entry (@$csld) {
+    for my $hetero (@{ $entry->{heteronyms} }) {
+        my $py = $hetero->{pinyin};
+        $py =~ s/<br>.*//;
+        $py =~ s/陸⃟//g;
+        $py =~ s/臺⃟//g;
+        $py =~ s/[臺陸]//g;
+        my $shown = $py;
+        $py =~ s/ɡ/g/g;
+        $py =~ s/ɑ/a/g;
+        $py =~ s/[-–－a-z:’',，\sāǎáàēěéèóōòǒūúùìíǐīǔǘǚǜü]//g;
+        $shown =~ s/g/ɡ/g;
+        say "$hetero->{id}\t$entry->{title}\t$shown\t$py" if $py;
+    }
+}
 
 #5. 音序是否正確？
 Q5:
+open my $fh, '<:mmap', '兩岸常用詞典2013.csv';
+require Text::CSV_XS;
+my $csv = Text::CSV_XS->new ({ binary => 1 });
+<$fh>;
 #(1) 哪些多音字詞的音序有重號或跳號？
+my $cur = 1;
+my $prev_title = '';
+my (%dup, %seq, %exp);
+while (my $row = $csv->getline ($fh)) {
+    my (undef, undef, undef, $id, $title, undef, $seq_sound) = @$row;
+    $seq_sound =~ s/\.$//;
+    if ($seq_sound) {
+        $cur = 1 unless $title eq $prev_title;
+        unless ($seq_sound == $cur) {
+            $dup{$title} .= Encode::decode_utf8("$id\t$title\t$seq_sound\t$cur");
+            push @{ $seq{$title} }, $seq_sound;
+            push @{ $exp{$title} }, $cur;
+        }
+        $cur++;
+    }
+    else {
+        $cur = 1;
+    }
+    $prev_title = $title;
+}
+
+for my $title (sort keys %dup) {
+    next if "@{[ sort @{ $seq{$title} } ]}" eq "@{[ sort @{ $exp{$title} } ]}";
+    say $dup{$title};
+}
 
 Q5_2:
 #(2) 哪些單音字詞誤填了音序？
+open $fh, '<:mmap', '兩岸常用詞典2013.csv';
+require Text::CSV_XS;
+my $csv = Text::CSV_XS->new ({ binary => 1 });
+<$fh>;
+my (%seen, %count);
+while (my $row = $csv->getline ($fh)) {
+    my (undef, undef, undef, $id, $title, undef, $seq_sound) = @$row;
+    if ($seq_sound) {
+        $seen{$title} .= Encode::decode_utf8("$id\t$title\t$seq_sound");
+        $count{$title}++;
+    }
+}
+
+for my $title (sort keys %seen) {
+    say $seen{$title} if $count{$title} == 1 and $seen{$title} =~ /1$/;
+}
