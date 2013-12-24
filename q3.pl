@@ -61,11 +61,13 @@ for my $entry (@$csld) {
     my $sounds = $pinyin{$entry->{title}} or next;
     for my $hetero (@{ $entry->{heteronyms} }) {
         my $py = $hetero->{pinyin};
-        $py =~ s/<br>.*//;
-        $py =~ s/陸⃟//g;
-        $py =~ s/臺⃟//g;
-        $py =~ s/[臺陸]//g;
+        next unless $py =~ /陸/;
+        $py =~ s/陸//;
+        $py =~ s/.*<br>//;
         $py =~ s/g/ɡ/g;
+        $py = substr($py, 1) while ord substr($py, 0, 1) > 8000;
+        $py = substr($py, 0, -1) while ord substr($py, -1) > 8000;
+        next unless $py;
         $sounds->{$py} or say "$hetero->{id}\t$entry->{title}\t$py";
     }
 }
