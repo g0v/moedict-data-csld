@@ -1,10 +1,22 @@
 use utf8;
 use Text::CSV_XS;
 use JSON::XS;
+
+open my $ch, '<:utf8', '字頭部首筆畫.csv';
+<$ch>;
+my $csv_ch = Text::CSV_XS->new ({ binary => 1 });
+my %CH;
+while (my $row = $csv_ch->getline($ch)) {
+#cnscode,educode,字頭,部首,部首代碼,部首外筆畫,總筆畫
+    my (undef, undef, $ch, $rad, undef, $nrsc, $sc) = @$row;
+    $CH{$ch} = { radical => $rad, non_radical_stroke_count => int $nrsc, stroke_count => int $sc };
+}
+
 # 字詞流水序      正體字形        簡化字形        音序    臺／陸特有詞    臺／陸特有音 臺灣音讀        臺灣漢拼        大陸音讀        大陸漢拼        釋義１  釋義２  釋義３  釋 義４  釋義５  釋義６  釋義７  釋義８  釋義９  釋義１０        釋義１１        釋義１２ 釋義１３        釋義１４        釋義１５        釋義１６        釋義１７        釋義１８ 釋義１９        釋義２０        釋義２１        釋義２２        釋義２３        釋義２ ４        釋義２５        釋義２６        釋義２７        釋義２８        釋義２９        釋義 ３０
 
 # 稿件階段,稿件狀態,備注,字詞流水序,正體字形,簡化字形,音序,臺／陸特有詞,臺／陸特有音,臺灣音讀,臺灣漢拼,大陸音讀,大陸漢拼,釋義１,釋義２,釋義３,釋義４,釋義５,釋義６,釋義７,釋義８,釋義９,釋義１０,釋義１１,釋義１２,釋義１３,釋義１４,釋義１５,釋義１６,釋義１７,釋義１８,釋義１９,釋義２０,釋義２１,釋義２２,釋義２３,釋義２４,釋義２５,釋義２６,釋義２７,釋義２８,釋義２９,釋義３０
 # 稿件版本,稿件階段,稿件狀態,備注,字詞流水序,正體字形,簡化字形,音序,臺／陸特有詞,臺／陸特有音,臺灣音讀,臺灣漢拼,大陸音讀,大陸漢拼,釋義１,釋義２,釋義３,釋義４,釋義５,釋義６,釋義７,釋義８,釋義９,釋義１０,釋義１１,釋義１２,釋義１３,釋義１４,釋義１５,釋義１６,釋義１７,釋義１８,釋義１９,釋義２０,釋義２１,釋義２２,釋義２３,釋義２４,釋義２５,釋義２６,釋義２７,釋義２８,釋義２９,釋義３０
+
 
 open my $fh, '<:utf8', '兩岸常用詞典2013.csv';
 binmode STDERR, ':utf8';
@@ -44,6 +56,7 @@ while (my $row = $csv->getline ($fh)) {
     warn qq["$title"\n] unless $seen{$title}++;
     undef $title_cn if $title_cn eq $title;
     $alt{$title} = $title_cn if $title_cn;
+
     push @{ $heteronyms{$title} }, {
         id => $id,
                 pinyin => $pinyin,
@@ -70,6 +83,7 @@ for my $title (sort keys %heteronyms) {
     $json = JSON::XS->new->pretty(1)->encode({
         title => $title,
         heteronyms => $heteronyms{$title},
+        %{$CH{$title} || {}},
     });
     $json =~ s/" : /":/g;
     print "$comma $json";
