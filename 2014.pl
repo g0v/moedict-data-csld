@@ -1,4 +1,5 @@
 use utf8;
+use strict;
 use Text::CSV_XS;
 use JSON::XS;
 
@@ -80,7 +81,7 @@ while (my $row = $csv->getline ($fh)) {
 }
 my $comma = '[';
 for my $title (sort keys %heteronyms) {
-    $json = JSON::XS->new->pretty(1)->canonical->encode({
+    my $json = JSON::XS->new->pretty(1)->canonical->encode({
         title => $title,
         heteronyms => $heteronyms{$title},
         %{$CH{$title} || {}},
@@ -91,4 +92,9 @@ for my $title (sort keys %heteronyms) {
 }
 print "]";
 
-warn qq["$title"\n] for sort keys %title; 
+my $comma = '[';
+for (sort keys %seen) {
+    warn qq[$comma "$_"\n];
+    $comma = ',';
+}
+warn "]\n";
