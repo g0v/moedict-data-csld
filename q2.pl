@@ -1,14 +1,15 @@
 use utf8;
-use 5.12.0;
+use 5.20.0;
 use Encode;
 use JSON::XS 'decode_json', 'encode_json';
 use File::Slurp 'read_file';
 binmode STDOUT, ':utf8';
+my $STAGE = shift @ARGV or die "Usage: perl $0 <stage>\n";
 
 my (%variants_id, %variants_ch);
 my $csld = decode_json(read_file('dict-csld.json', {binmode => ':mmap'}));
 
-goto Q2;
+goto Q2 unless $STAGE == 1;
 for my $entry (@$csld) {
     for my $hetero (@{ $entry->{heteronyms} }) {
         next unless $hetero->{id} =~ /^4/;
@@ -31,13 +32,14 @@ for my $entry (@$csld) {
         say "$hetero->{id}\t$entry->{title}\t$variants_id{$1}\t$title";
     }
 }
+exit;
 
 #2. 哪些應簡化而未簡化?
 
 Q2:
 open my $fh, '<:mmap', '通用漢字規範表2013.csv';
 require Text::CSV_XS;
-my $csv = Text::CSV_XS->new ({ binary => 1 });
+my $csv = Text::CSV_XS->new({ binary => 1 });
 <$fh>;
 #序號,字表別,大陸規範字,臺灣標準字一,臺灣標準字二,臺灣標準字三,臺灣標準字四
 my (%t2n, %t2n_partial, %t2n_eq);
@@ -47,13 +49,18 @@ while (my $row = $csv->getline ($fh)) {
         next unless $_;
         tr/ //d;
         if ($_ eq $cn) {
-            $t2n_eq{Encode::decode_utf8($_)}++;
+            Encode::_utf8_on($_);
+            $t2n_eq{$_}++;
         }
         elsif (s/[()]//g) {
-            $t2n_partial{Encode::decode_utf8($_)} = Encode::decode_utf8($cn);
+            Encode::_utf8_on($_);
+            Encode::_utf8_on($cn);
+            $t2n_partial{$_} = $cn;
         }
         else {
-            $t2n{Encode::decode_utf8($_)} = Encode::decode_utf8($cn);
+            Encode::_utf8_on($_);
+            Encode::_utf8_on($cn);
+            $t2n{$_} = $cn;
         }
     }
 }
@@ -63,7 +70,7 @@ my $re_t2n = '(' . join('|', keys %t2n) . ')';
 my $re_t2n_partial = '(' . join('|', keys %t2n_partial) . ')';
 my $re_t2n_eq = '(?:' . join('|', keys %t2n_eq) . ')';
 
-goto Q3;
+goto Q3 unless $STAGE == 2;
 for my $entry (@$csld) {
     my $tw = $entry->{title};
     for my $hetero (@{ $entry->{heteronyms} }) {
@@ -81,6 +88,8 @@ for my $entry (@$csld) {
         # my $cn = $entry->{alt};
     }
 }
+exit;
+
 #3. 哪些不必簡化而簡化?
 Q3:
 for my $entry (@$csld) {

@@ -1,9 +1,10 @@
 use utf8;
-use 5.14.0;
+use 5.20.0;
 use Encode;
 use JSON::XS 'decode_json', 'encode_json';
 use File::Slurp 'read_file';
 binmode STDOUT, ':utf8';
+my $STAGE = shift @ARGV or die "Usage: perl $0 <stage>\n";
 
 my (%variants_id, %variants_ch);
 my $csld = decode_json(read_file('dict-csld.json', {binmode => ':mmap'}));
@@ -24,7 +25,8 @@ for my $file (qw[ 國語一字多音審訂表1999.csv 國語一字多音審訂�
 
 #1. 字頭收音是否符合體例？
 #(1) 哪些字詞的臺灣音讀不同於《國語一字多音審訂表》？
-
+die "Usage: $0 [ 1.1 | 1.2 ]" if $STAGE == 1;
+goto Q1_2 unless $STAGE == 1.1;
 for my $entry (@$csld) {
     my $sounds = $sound{$entry->{title}} or next;
     for my $hetero (@{ $entry->{heteronyms} }) {
@@ -36,9 +38,11 @@ for my $entry (@$csld) {
         $sounds->{$bpmf} or say "$hetero->{id}\t$entry->{title}\t$bpmf" =~ s/ㄧ/丨/gr;
     }
 }
+exit;
 
 #(2) 哪些字詞的大陸音讀不同於《普通話異讀詞審音表》？
 Q1_2:
+goto Q2 unless $STAGE == 1.2;
 
 my %pinyin;
 # 序號,正體字,簡化字,音一,音二,音三,音四,音五,音六,統讀
@@ -71,9 +75,12 @@ for my $entry (@$csld) {
         $sounds->{$py} or say "$hetero->{id}\t$entry->{title}\t$py";
     }
 }
+exit;
 
 #2. 哪些詞素取音不符合字頭收音？
 Q2:
+die "Usage: $0 [ 2.1 | 2.2 ]\n" if $STAGE == 2;
+goto Q3 unless $STAGE == 2.1 or $STAGE == 2.2;
 
 my %solo;
 for my $entry (@$csld) {
@@ -102,23 +109,31 @@ for my $entry (@$csld) {
         my $title = $entry->{title} =~ s/[﹐，,]//gr;
         next if length $title != @bpmf and $title =~ /兒/; # 兒化韻
         next if length $title != @bpmf and !@bpmf;
-        #say "$hetero->{id}\t$title\t$hetero->{bopomofo}" unless length $title == @bpmf;
+        if ($STAGE == 2.1) {
+            next if $title =~ /\+/;
+            say "$hetero->{id}\t$title\t$hetero->{bopomofo}" unless length $title == @bpmf;
+        }
         next unless length $title == @bpmf;
         for my $word (split //, $title) {
+            next last unless $STAGE == 2.2;
             say "$hetero->{id}\t$title\t$word\t$bpmf[0]" unless $solo{$word}{$bpmf[0]} or $bpmf[0] =~ /[•˙˙‧]/ or $word =~ /[一不]/;
             shift @bpmf;
         }
     }
 }
+exit;
 
 #3. 哪些字詞的注音符號與漢語拼音的音讀不一致？
 Q3:
-use Bopomofo;
-$Bopomofo::Map{ㄉㄚ} = 'da';
-$Bopomofo::Map{ㄌㄩ} = 'lu';
-$Bopomofo::Map{ㄊㄚ} = 'ta';
-$Bopomofo::Map{ㄇㄜ} = 'me';
-$Bopomofo::Map{ㄘㄡ} = 'cou';
+die "Usage: $0 [ 3.1 | 3.2 ]\n" if $STAGE == 3;
+goto Q3_2 unless $STAGE == 3.1;
+
+require Bopomofo;
+$Bopomofo::Map{'ㄉㄚ'} = 'da';
+$Bopomofo::Map{'ㄌㄩ'} = 'lu';
+$Bopomofo::Map{'ㄊㄚ'} = 'ta';
+$Bopomofo::Map{'ㄇㄜ'} = 'me';
+$Bopomofo::Map{'ㄘㄡ'} = 'cou';
 $Bopomofo::Map{'ㄌㄧ'} = 'li';
 $Bopomofo::Map{'ㄒㄧㄢ'} = 'xian';
 $Bopomofo::Map{'ㄋㄡ'} = 'nou';
@@ -170,12 +185,12 @@ for my $entry (@$csld) {
         $py =~ s/[臺陸]//g;
         $py =~ s/g/ɡ/g;
         say "$hetero->{id}\t$entry->{title}\t$bpmf\t$py" unless $bpmf_nfd eq $py_nfd;
-        #TODO: Tonal?
     }
 }
-
+exit;
 
 Q3_2:
+goto Q4 unless $STAGE == 3.2;
 for my $entry (@$csld) {
     for my $hetero (@{ $entry->{heteronyms} }) {
         my $bpmf = $hetero->{bopomofo};
@@ -220,6 +235,7 @@ exit;
 
 #4. 哪些字詞的漢語拼音有誤？
 Q4:
+goto Q5 unless $STAGE == 4;
 for my $entry (@$csld) {
     for my $hetero (@{ $entry->{heteronyms} }) {
         my $py = $hetero->{pinyin};
@@ -235,10 +251,14 @@ for my $entry (@$csld) {
         say "$hetero->{id}\t$entry->{title}\t$shown\t$py" if $py;
     }
 }
+exit;
 
 #5. 音序是否正確？
 Q5:
-open my $fh, '<:mmap', '兩岸常用詞典2013.csv';
+die "Usage: $0 [ 5.1 | 5.2 ]\n" if $STAGE == 5;
+goto Q5_2 unless $STAGE == 5.1;
+
+open my $fh, '<:mmap', '兩岸詞典.csv';
 require Text::CSV_XS;
 my $csv = Text::CSV_XS->new ({ binary => 1 });
 <$fh>;
@@ -252,7 +272,9 @@ while (my $row = $csv->getline ($fh)) {
     if ($seq_sound) {
         $cur = 1 unless $title eq $prev_title;
         unless ($seq_sound == $cur) {
-            $dup{$title} .= Encode::decode_utf8("$id\t$title\t$seq_sound\t$cur");
+            my $row = "$id\t$title\t$seq_sound\t$cur\n";
+            Encode::_utf8_on($row);
+            $dup{$title} .= $row;
             push @{ $seq{$title} }, $seq_sound;
             push @{ $exp{$title} }, $cur;
         }
@@ -266,8 +288,9 @@ while (my $row = $csv->getline ($fh)) {
 
 for my $title (sort keys %dup) {
     next if "@{[ sort @{ $seq{$title} } ]}" eq "@{[ sort @{ $exp{$title} } ]}";
-    say $dup{$title};
+    print $dup{$title};
 }
+exit;
 
 Q5_2:
 #(2) 哪些單音字詞誤填了音序？

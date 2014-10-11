@@ -1,9 +1,10 @@
 use utf8;
-use 5.12.0;
+use 5.20.0;
 use Encode;
 use JSON::XS 'decode_json', 'encode_json';
 use File::Slurp 'read_file';
 binmode STDOUT, ':utf8';
+my $STAGE = shift @ARGV or die "Usage: perl $0 <stage>\n";
 
 my (%variants_id, %variants_ch);
 my $csld = decode_json(read_file('dict-csld.json', {binmode => ':mmap'}));
@@ -21,6 +22,7 @@ for my $entry (@$csld) {
 my $re_var = '(' . join('|', keys %variants_ch) . ')';
 
 #1. 哪些字詞的釋義行文用字誤用「異體字」（流水序4開頭）？
+goto Q2 unless $STAGE == 1;
 for my $entry (@$csld) {
     for my $hetero (@{ $entry->{heteronyms} }) {
         next if $hetero->{id} =~ /^4/;
@@ -31,18 +33,19 @@ for my $entry (@$csld) {
         }
     }
 }
+exit;
 
 Q2:
-Q3:
 #2. 義項序是否正確？
+die "Usage: $0 [ 2.1 | 2.2 ]\n" if $STAGE == 2;
+
+Q3:
 #3. 成組符號是否有缺漏？
 
 open my $fh, '<:mmap', '兩岸常用詞典2013.csv';
 require Text::CSV_XS;
 my $csv = Text::CSV_XS->new ({ binary => 1 });
 <$fh>;
-my @solos;
-my @multi;
 my @imbas;
 
 use Regexp::Common qw /balanced/;
@@ -59,15 +62,16 @@ while (my $row = $csv->getline ($fh)) {
     if (@defs > 1) {
         my $ord = 1;
         for my $def (@defs) {
-            next unless $def =~ /([1-9]\d*)\.(?![56])/;
-            push @multi, "$id\t$title\t$ord\t$1" unless $def =~ /$ord\.(?![56])/;
+            last unless $STAGE == 2.1;
+            say "$id\t$title\t$ord\t$1" unless $def =~ /$ord\.(?![56])/;
             $ord++;
         }
     }
-    else {
+    elsif ($STAGE == 2.2) {
 #(2) 哪些字詞僅有一個義項卻誤填了義項序？
-        push @solos, "$id\t$title\t@defs" if $defs[0] =~ /^\d+\./;
+        say "$id\t$title\t@defs" if $defs[0] =~ /^\d+\./;
     }
+    next unless $STAGE == 3;
     for my $def (@defs) {
         Encode::_utf8_on($def);
         for my $idx (0..$#opener) {
@@ -80,5 +84,3 @@ while (my $row = $csv->getline ($fh)) {
         }
     }
 }
-say Encode::decode_utf8($_) for @multi;
-say Encode::decode_utf8($_) for @solos;
