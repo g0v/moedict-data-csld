@@ -302,7 +302,9 @@ my (%seen, %count);
 while (my $row = $csv->getline ($fh)) {
     my (undef, undef, undef, $id, $title, undef, $seq_sound) = @$row;
     if ($seq_sound) {
-        $seen{$title} .= Encode::decode_utf8("$id\t$title\t$seq_sound");
+        my $concat = "$id\t$title\t$seq_sound";
+        Encode::_utf8_on($concat);
+        $seen{$title} .= $concat;
         $count{$title}++;
     }
 }

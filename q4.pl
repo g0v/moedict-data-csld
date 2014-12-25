@@ -42,7 +42,7 @@ die "Usage: $0 [ 2.1 | 2.2 ]\n" if $STAGE == 2;
 Q3:
 #3. 成組符號是否有缺漏？
 
-open my $fh, '<:mmap', '兩岸常用詞典2013.csv';
+open my $fh, '<:mmap', '兩岸詞典.csv';
 require Text::CSV_XS;
 my $csv = Text::CSV_XS->new ({ binary => 1 });
 <$fh>;
@@ -62,6 +62,8 @@ while (my $row = $csv->getline ($fh)) {
     if (@defs > 1) {
         my $ord = 1;
         for my $def (@defs) {
+            next if $def =~ /^\(/;
+            next if $def =~ /：$/ and $def !~ /^\d/;
             last unless $STAGE == 2.1;
             say "$id\t$title\t$ord\t$1" unless $def =~ /$ord\.(?![56])/;
             $ord++;
