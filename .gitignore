@@ -45,3 +45,6 @@ archive.zip
 # vim temporary files
 *~
 .*.sw?
+
+# seld build files
+config.yaml
