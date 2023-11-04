@@ -11,6 +11,7 @@ fastapi = "^0.104.1"
 uvicorn = "^0.23.2"
 loguru = "^0.7.2"
 pyyaml = "^6.0.1"
+sqlalchemy = "^2.0.23"
 
 
 [build-system]

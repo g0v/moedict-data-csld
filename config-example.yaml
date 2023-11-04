@@ -1,25 +1,23 @@
 app:
-  title: "fastapi template"
-  description: "A simple template for fastapi and complete workflow"
-  version: "0.1.0"
-  openapi_url: "/openapi.json"
+  title: "fastapi template111111111111111111111"
+  description: "A simple template for fastapi and complete workflow111111111111111"
+  version: "0.1.011111111111111"
+  openapi_url: "/openapi.json111111111111111"
   prefix: "/api"
 
-db:
-  postgres_db: "glsoft-fastapi"
-  postgres_host: "localhost"
-  postgres_port: 5432
-  postgres_user: "postgres"
-  postgres_password: "m3ow87"
-  postgres_test_port: 5432
+http_server:
+  hostname: "0.0.0.0"
+  port: "1111"
 
-pgadmin:
-  default_email: "admin@pgadmin.org"
-  listen_port: 5050
-  default_password: "admin"
-  ssl_mode: "disable"
+db:
+  dbname: "glsoft-fastapi11111111111"
+  host: "localhost11111111111111"
+  port: "543111111111112"
+  user: "postgres1111111111"
+  password: "m3ow8711111111"
+  postgres_test_port: 543211111111
 
 core:
-  secret_key: "m3ow87"
-  access_token_expire_minutes: 11520
-  access_token_algorithm: "HS256"
+  access_secret: "m3ow87111111111"
+  access_token_expire_minutes: 111111111520
+  access_token_algorithm: "HS2561111111111111"

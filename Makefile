@@ -11,6 +11,9 @@
 dev:
 	cd api && poetry run uvicorn app:APP --reload --host 0.0.0.0
 
+run:
+	cd api && poetry run python app.py
+
 init:
 	sudo chmod a+x scripts/*
 	./scripts/init.sh

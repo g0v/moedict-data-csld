@@ -1,66 +1,62 @@
-import sys
-from typing import Any, Dict, Optional
+import json
+from pydantic import BaseModel, PostgresDsn, ValidationError
+import yaml
 
-from dotenv import find_dotenv
-from pydantic import BaseSettings, PostgresDsn, validator
+class AppConfig(BaseModel):
+    title: str = "fastapi template"
+    description: str = "A simple template for fastapi and complete workflow"
+    version: str = "0.1.0"
+    openapi_url: str = "/openapi.json"
+    prefix: str = "/api"
 
+class HttpServerConfig(BaseModel):
+    hostname: str = "localhost"
+    port: str = "8000"
 
-class Settings(BaseSettings):
-    class Config:
-        env_file = find_dotenv(usecwd=True)
-        env_file_encoding = "utf-8"
+class GrpcServerConfig(BaseModel):
+    hostname: str = "localhost"
+    port: str = "50051"
 
-    """Application configuration"""
-    APP_TITLE: str = "fastapi template"
-    APP_DESCRIPTION: str = "A simple template for fastapi and complete workflow"
-    APP_VERSION: str = "0.1.0"
-    APP_OPENAPI_URL: str = "/openapi.json"
-    APP_PREFIX: str = "/api"
+class DatabaseConfig(BaseModel):
+    host: str = "localhost"
+    port: str = "5432"
+    user: str = "user"
+    password: str = "password"
+    dbname: str = "dbname"
+    dsn: PostgresDsn = None  # This will be computed, so no default is set here
 
-    """Database configuration"""
-    POSTGRES_DB: str = "fastapi-template"
-    POSTGRES_HOST: str = "postgres"
-    POSTGRES_PORT: str = "5432"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "m3ow87"
-    POSTGRES_TEST_PORT: str = "5433"
-    POSTGRES_DSN: Optional[PostgresDsn] = None
+class MongoConfig(BaseModel):
+    mongo_uri: str = "mongodb://localhost:27017"
+    db: str = "mydb"
+    response_collection: str = "responses"
 
-    @validator("POSTGRES_DSN", pre=True)
-    def assemble_db_connection(
-        cls, v: Optional[str], values: Dict[str, Any]
-    ) -> Optional[PostgresDsn]:
-        # if exists value and not empty
-        if isinstance(v, str) and v != "":
-            return v
+class SecretConfig(BaseModel):
+    access_secret: str = "mysecretkey"
+    access_token_expire_minutes: int = 60 * 24 * 8  # 8 days
+    access_token_algorithm: str = "HS256"
 
-        # choose which port should be used
-        port = values.get("POSTGRES_PORT")
-        if any("pytest" in arg for arg in sys.argv):
-            port = values.get("POSTGRES_TEST_PORT")
+class Configuration(BaseModel):
+    app: AppConfig = AppConfig()
+    http_server: HttpServerConfig = HttpServerConfig()
+    grpc_server: GrpcServerConfig = GrpcServerConfig()
+    user_grpc: GrpcServerConfig = GrpcServerConfig()
+    db: DatabaseConfig = DatabaseConfig()
+    mongo: MongoConfig = MongoConfig()
+    core: SecretConfig = SecretConfig()
 
-        # choose which schema should be used, alembic use sync driver
-        schema = "postgresql+asyncpg"
-        if any("alembic" in arg for arg in sys.argv):
-            schema = "postgresql"
+def load_config_from_yaml(yaml_path: str = "config.yaml") -> Configuration:
+    with open(yaml_path, 'r') as file:
+        yaml_content = yaml.safe_load(file)
+        try:
+            config = Configuration(**yaml_content)
+            # print(json.dumps(config.model_dump(),
+            #     sort_keys=True,
+            #     indent=4
+            # ))
+            return config
+        except ValidationError as e:
+            print(f"Error loading configuration: {e}")
+            raise
 
-        # build postgres dsn
-        return PostgresDsn.build(
-            scheme=schema,
-            user=values.get("POSTGRES_USER"),
-            password=values.get("POSTGRES_PASSWORD"),
-            host=values.get("POSTGRES_HOST"),
-            port=port,
-            path=f"/{values.get('POSTGRES_DB')}",
-        )
-
-    """ Core configuration """
-    SALT: str = "fu3k3n"
-    ACCESS_TOKEN_SECRET_KEY: str = "m3ow87"
-    REFRESH_TOKEN_SECRET_KEY: str = "m3ow87m3ow87??"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
-    ACCESS_TOKEN_ALGORITHM: str = "HS256"
-
-
-settings = Settings()
+# # Example usage: Load settings from a YAML file
+settings = load_config_from_yaml('../config.yaml')
