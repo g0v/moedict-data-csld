@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "china-words-checker"
+version = "0.1.0"
+description = ""
+authors = ["peterxcli <peterxcli@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.104.1"
+uvicorn = "^0.23.2"
+loguru = "^0.7.2"
+pyyaml = "^6.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

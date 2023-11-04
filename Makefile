@@ -7,3 +7,10 @@
 
 2014 ::
 	perl 2014.pl 1>dict-csld.json 2>index.json
+
+dev:
+	cd api && poetry run uvicorn app:APP --reload --host 0.0.0.0
+
+init:
+	sudo chmod a+x scripts/*
+	./scripts/init.sh
