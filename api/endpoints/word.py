@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI
 from pydantic import BaseModel
 import re
@@ -7,27 +8,27 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 router = APIRouter()
 
-# # Assuming the unique_synonyms and unique_mainland_terms are already defined as Python lists
-# unique_synonyms = [...] #TODO: Fill this with the content from =同實異名.json
-# unique_mainland_terms = [...] #TODO: Fill this with the content from =大陸特有.json
+def find_all_occurrences_regex(terms_list, text):
+    term_occurrences = {}
+    for term in terms_list:
+        # Compile a regular expression pattern for the term
+        pattern = re.compile(re.escape(term))
+        # Find all matches of the pattern in the text
+        matches = [match.start() for match in pattern.finditer(text)]
+        if matches:
+            term_occurrences[term] = matches
+        # else:
+        #     term_occurrences[term] = "Not found in the text"
+    return term_occurrences
 
-# # Combine both lists for checking
-# all_terms = set(unique_synonyms + unique_mainland_terms)  # Use a set for faster lookup
-
+## faster search
 @router.post(
     "/check-text/",
     status_code=status.HTTP_200_OK,
     response_model=schemas.TermsFoundResponse,
     name="word:check_text",
 )
-async def check_text(text_input: schemas.TextInput, terms: set = Depends(get_terms)):
-    print(terms)
-    # Find keywords along with their positions
-    found_terms_with_pos = []
-    # for term in terms:
-    #     for match in re.finditer(r'\b{}\b'.format(re.escape(term)), text_input.text):
-    #         start_pos = match.start()
-    #         found_terms_with_pos.append({"pos": start_pos, "word": term})
-    # # Sort the results by position
-    # found_terms_with_pos.sort(key=lambda x: x["pos"])
-    return found_terms_with_pos
+def check_text(text_input: schemas.TextInput, terms: list = Depends(get_terms)):
+    all_terms_occurrences_regex = find_all_occurrences_regex(terms, text_input.text)
+    found_terms_with_all_occurrences_regex = {term: positions for term, positions in all_terms_occurrences_regex.items() if positions != "Not found in the text"}
+    return schemas.TermsFoundResponse(terms=found_terms_with_all_occurrences_regex)

@@ -1,5 +1,6 @@
-from typing import List
-from pydantic import BaseModel, Field
+from typing import List, Dict
+from pydantic import BaseModel, Field, validator
+
 
 
 # Define the request schema
@@ -12,4 +13,10 @@ class TermPosition(BaseModel):
     word: str = Field(..., description="The term that was found")
 
 class TermsFoundResponse(BaseModel):
-    result: List[TermPosition]
+    terms: Dict[str, List[int]]
+
+    @validator('terms', pre=True, each_item=True)
+    def check_values(cls, v):
+        if isinstance(v, list) and all(isinstance(x, int) for x in v):
+            return v
+        raise ValueError('terms must be a list of integers')

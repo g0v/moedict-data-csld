@@ -17,7 +17,7 @@ def load_terms():
 
     # Combine and deduplicate terms
     all_terms = set(unique_synonyms + unique_mainland_terms)
-    return all_terms
+    return list(all_terms)
 
 # Dependency function to be used with FastAPI
 async def get_terms():

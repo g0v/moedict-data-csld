@@ -1,0 +1,96 @@
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 2rem;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+mark {
+    background-color: #ffc107;
+    padding: 0.2rem;
+}
+
+.title {
+    color: #333;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.input-text {
+    width: 100%;
+    height: 150px;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.check-button {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.check-button:hover {
+    background-color: #0056b3;
+}
+
+.highlighted-text {
+    white-space: pre-wrap;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.cursor-indicator {
+    position: relative;
+    color: #b30000;
+    // width: 10px;
+    // height: 1.7em;
+    font-weight: 900;
+    font-size: large;
+    animation: blink 1s step-start 0s infinite;
+    z-index: 9999;
+}
+
+@keyframes blink {
+    50% {
+        color: transparent;
+    }
+}
+
+// .text-segment {
+//     position: relative;
+//     /* Needed to position the cursor indicator absolutely within it */
+// }
+
+// .cursor-indicator {
+//     position: absolute;
+//     /* Absolute positioning within the last text segment */
+//     top: 0;
+//     left: 0;
+//     height: 100%;
+//     width: 2px;
+//     /* Width of the cursor line */
+//     background-color: currentColor;
+//     /* Use the text color for the cursor */
+//     z-index: 10;
+//     /* Ensure the cursor is above the text */
+//     animation: blink-animation 1s steps(5, start) infinite;
+// }
+
+// @keyframes blink-animation {
+//     to {
+//         visibility: hidden;
+//     }
+// }

@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
+import json
 
 import uvicorn
+from deps import get_terms, load_terms
 from config import settings
 from endpoints import word
 from fastapi import APIRouter, Depends, FastAPI
@@ -69,6 +71,19 @@ APP.include_router(
 )
 
 if __name__ == "__main__":
-    config = uvicorn.Config("app:APP", port=int(settings.http_server.port), log_level="info", host=settings.http_server.hostname)
+    # print(
+    #     json.dumps(
+    #         {"terms" : list(load_terms())},
+    #         sort_keys=True,
+    #         indent=4,
+    #         ensure_ascii=False,
+    #     )
+    # )
+    # write terms to file
+    with open('test/terms.json', 'w', encoding='utf-8') as f:
+        json.dump({"terms" : list(load_terms())}, f, ensure_ascii=False, indent=4)
+
+    # run server
+    config = uvicorn.Config("app:APP", port=int(settings.http_server.port), log_level="info", host=settings.http_server.hostname,  reload=True)
     server = uvicorn.Server(config)
     server.run()
